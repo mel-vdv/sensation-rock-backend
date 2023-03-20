@@ -6,7 +6,7 @@ const cors = require('cors');
 const bodyparser = require('body-parser');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const database = 'sensationrock';
+const database = 'quiz';
 const jsonParser = bodyparser.json();
 
 // mini routesli au sein de l'routes:
@@ -21,7 +21,7 @@ routes.use(bodyparser.urlencoded({ extended: false }));
 routes.use(bodyparser.json());
 
 // MONGODB CLIENT-------------------------------------------------------
-const uri = "";
+const uri = "mongodb+srv://melvdev:bibiegalnul@cluster-sensation-rock.mam0t6r.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 // connect to db :------------------------------------------------------
@@ -37,9 +37,29 @@ client.connect((err) => {
     .then(() => {
         console.log('connect db success');
         const concours = client.db(database).collection("concours");
-        //---------- CRUD READ
+        //---------- CRUD READ CONCOURS
         routes.get("/concours", function (req, res) {
             concours.find().toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        });
+        //---------- CRUD READ QUESTIONS
+        const quest = client.db(database).collection("questions");
+        routes.get("/questions", function (req, res) {
+            quest.find().toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        });
+        //---------- CRUD READ REGLAGES ADMIN
+        const reglages = client.db(database).collection("reglages");
+        routes.get("/reglages", function (req, res) {
+            reglages.find().toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
                     res.status(200).send({ results });
