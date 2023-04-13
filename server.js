@@ -4,7 +4,7 @@ const routes = express.Router();
 const port = 5000;
 const cors = require('cors');
 const bodyparser = require('body-parser');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const database = 'quiz';
 const jsonParser = bodyparser.json();
@@ -37,6 +37,18 @@ client.connect((err) => {
     .then(() => {
         console.log('connect db success');
         const concours = client.db(database).collection("concours");
+        const quest = client.db(database).collection("questions");
+        const reglages = client.db(database).collection("reglages");
+        const usersColl = client.db(database).collection('users');
+        //---------- CRUD READ USERS
+        routes.get("/users", function (req, res) {
+            usersColl.find().toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        });
         //---------- CRUD READ CONCOURS
         routes.get("/concours", function (req, res) {
             concours.find().toArray()
@@ -47,7 +59,6 @@ client.connect((err) => {
                 .catch(err => res.send(err));
         });
         //---------- CRUD READ QUESTIONS
-        const quest = client.db(database).collection("questions");
         routes.get("/questions", function (req, res) {
             quest.find().toArray()
                 .then((err, results) => {
@@ -56,8 +67,35 @@ client.connect((err) => {
                 })
                 .catch(err => res.send(err));
         });
+        //----------- CRUD CREATE QUESTION
+        routes.post("/questions/add", jsonParser, function (req, res) {
+            console.log('req body', req.body);
+            quest
+                .insertOne(req.body)
+                .then(() => res.status(200).send("successfully inserted new QUESTION"))
+                .catch((err) => {
+                    res.send(err);
+                });
+        });
+        //------------- DELETE
+        routes.put("/questions/suppr", jsonParser, function(req,res){
+            console.log('sereur : ',req.body.id);
+            let id = new ObjectId(req.body.id);
+            quest.deleteOne({'_id': id})
+            .then(() => {res.status(200).send('ok quest suppr');})
+            .catch(err => res.send(err));
+        });
+         //----------- CRUD CREATE EVENT
+         routes.post("/concours/add", jsonParser, function (req, res) {
+            console.log('req body', req.body);
+            quest
+                .insertOne(req.body)
+                .then(() => res.status(200).send("successfully inserted new EVENT"))
+                .catch((err) => {
+                    res.send(err);
+                });
+        });
         //---------- CRUD READ REGLAGES ADMIN
-        const reglages = client.db(database).collection("reglages");
         routes.get("/reglages", function (req, res) {
             reglages.find().toArray()
                 .then((err, results) => {
@@ -66,9 +104,15 @@ client.connect((err) => {
                 })
                 .catch(err => res.send(err));
         });
+        //---------- CRUD UPDATE REGLAGES ADMIN/////////// !!!!! ne pas oublier de mettre PUT
+        routes.put("/reglages/modif", jsonParser, function(req,res){
+            reglages.updateOne({id:1}, {$set:req.body})
+            .then(() => {res.status(200).send('modif regl ok');})
+            .catch(err => res.send(err));
+        });
         //--------- CRUD CREATE
         routes.post("/concours/add", jsonParser, function (req, res) {
-            res.send(req.body);
+          //  res.send(req.body);
             concours.insertOne(req.body)
                 /*
                     produits.insertOne({
