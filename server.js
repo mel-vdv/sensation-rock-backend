@@ -36,11 +36,24 @@ client.connect((err) => {
     //si connect db success : 
     .then(() => {
         console.log('connect db success');
-        const concours = client.db(database).collection("concours");
-        const quest = client.db(database).collection("questions");
-        const reglages = client.db(database).collection("reglages");
+        //-------------------------------------------------------------
+        const concoursColl = client.db(database).collection("concours");
+        const questColl = client.db(database).collection("questions");
         const usersColl = client.db(database).collection('users');
-        //---------- CRUD READ USERS
+        //-------------------------------------------------------------
+        //-------------------------USERS------------------------------------
+        //-------------------------------------------------------------
+        //create
+        routes.post("/users/add", jsonParser, function (req, res) {
+            console.log('add post serveur', req.body);
+            usersColl.insertOne(req.body)
+                .then((results) => {
+                    res.status(200).send({ results });
+                    console.log('ajout user ok');
+                })
+                .catch(err => res.send(err));
+        });
+        //read
         routes.get("/users", function (req, res) {
             usersColl.find().toArray()
                 .then((err, results) => {
@@ -49,86 +62,170 @@ client.connect((err) => {
                 })
                 .catch(err => res.send(err));
         });
-        //---------- CRUD READ CONCOURS
+        // read avec idU
+        routes.get("/user/:email", function (req, res) {
+            console.log('serveur', req.params.email);
+            usersColl.find({ email: req.params.email }).toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        })
+        //update
+
+        //delete
+
+        //-------------------------------------------------------------
+        //-------------------------SCORE------------------------------------
+        //-------------------------------------------------------------
+        //read
+        routes.get('/score/:idU/:idEv', function(req,res){
+            let id= new ObjectId(req.params.idU);
+            usersColl.find(
+                {'_id': id, concours:{ $elemMatch: {'idEv': req.params.idEv}}}
+            ).toArray()
+            .then((err, results) => {
+                if (err) { return res.send(err) }
+                res.status(200).send({ results });
+            })
+            .catch(err => res.send(err));
+        });
+        //update
+        routes.put('/score/modif/:idU', jsonParser, function(req,res){
+            let id = new ObjectId(req.params.idU);
+            usersColl.updateOne(
+                {'_id':id , concours:{ $elemMatch: {'idEv': req.body.idEv}} },
+                {$set: { "concours.$.nbPt": req.body.nbPt, "concours.$.nbQ": req.body.nbQ}})
+        })
+
+        //-------------------------------------------------------------
+        //-------------------------CONCOURS------------------------------------
+        //-------------------------------------------------------------
+        //create
+        routes.post("/concours/add", jsonParser, function (req, res) {
+            concoursColl.insertOne(req.body)
+                .then((results) => {
+                    res.status(200).send({ results });
+                    console.log('ajout concours ok');
+                })
+                .catch(err => res.send(err));
+        });
+        //read MUTLI
         routes.get("/concours", function (req, res) {
-            concours.find().toArray()
+            concoursColl.find().toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
                     res.status(200).send({ results });
                 })
                 .catch(err => res.send(err));
         });
-        //---------- CRUD READ QUESTIONS
-        routes.get("/questions", function (req, res) {
-            quest.find().toArray()
+        //read ONE 
+        routes.get("/event/:idEv", function (req, res) {
+            let id = new ObjectId(req.params.idEv);
+            concoursColl.find({ '_id': id }).toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
                     res.status(200).send({ results });
                 })
                 .catch(err => res.send(err));
         });
-        //----------- CRUD CREATE QUESTION
+        //update
+        routes.put("/concours/modif", jsonParser, function (req, res) {
+
+            let id = new ObjectId(req.body['_id']);
+            req.body['_id'] = id;/////////////// PRIMORDIAL SINON CHAMP PAS RECONNU LORS DU UPDATE 
+
+            concoursColl.updateOne({ '_id': id }, { $set: req.body })
+                .then(() => { res.status(200).send('modif event ok'); })
+                .catch(err => res.send(err));
+        });
+        //delete
+        routes.put("/concours/suppr", jsonParser, function (req, res) {
+            let id = new ObjectId(req.body.id);
+            concoursColl.deleteOne({ '_id': id })
+                .then(() => { res.status(200).send('ok event suppr'); })
+                .catch(err => res.send(err));
+        });
+        //-------------------------------------------------------------
+        //-------------------------QUESTION------------------------------------
+        //-------------------------------------------------------------
+        //create
         routes.post("/questions/add", jsonParser, function (req, res) {
             console.log('req body', req.body);
-            quest
+            questColl
                 .insertOne(req.body)
                 .then(() => res.status(200).send("successfully inserted new QUESTION"))
                 .catch((err) => {
                     res.send(err);
                 });
         });
-        //------------- DELETE
-        routes.put("/questions/suppr", jsonParser, function(req,res){
-            console.log('sereur : ',req.body.id);
-            let id = new ObjectId(req.body.id);
-            quest.deleteOne({'_id': id})
-            .then(() => {res.status(200).send('ok quest suppr');})
-            .catch(err => res.send(err));
-        });
-         //----------- CRUD CREATE EVENT
-         routes.post("/concours/add", jsonParser, function (req, res) {
-            console.log('req body', req.body);
-            quest
-                .insertOne(req.body)
-                .then(() => res.status(200).send("successfully inserted new EVENT"))
-                .catch((err) => {
-                    res.send(err);
-                });
-        });
-        //---------- CRUD READ REGLAGES ADMIN
-        routes.get("/reglages", function (req, res) {
-            reglages.find().toArray()
+        //read all
+        routes.get("/questions", function (req, res) {
+            questColl.find().toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
                     res.status(200).send({ results });
                 })
                 .catch(err => res.send(err));
         });
-        //---------- CRUD UPDATE REGLAGES ADMIN/////////// !!!!! ne pas oublier de mettre PUT
-        routes.put("/reglages/modif", jsonParser, function(req,res){
-            reglages.updateOne({id:1}, {$set:req.body})
-            .then(() => {res.status(200).send('modif regl ok');})
-            .catch(err => res.send(err));
-        });
-        //--------- CRUD CREATE
-        routes.post("/concours/add", jsonParser, function (req, res) {
-          //  res.send(req.body);
-            concours.insertOne(req.body)
-                /*
-                    produits.insertOne({
-                        id:29999,
-                        name: "pull",
-                        price:299,
-                        category:'clothes'
-                     })*/
-                // si requete successfull :
-                .then((results) => {
+        //read limit
+        routes.get("/liste-generale/:limit", function (req, res) {
+            let limit = Number(req.params.limit);
+            console.log('limit : ', limit);
+            questColl.find().limit(limit).toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
                     res.status(200).send({ results });
-                    console.log('ajout concours ok');
                 })
-                // sirequete echec :
                 .catch(err => res.send(err));
         });
+        //read limit et param query
+        routes.put("/liste-perso/:limit", jsonParser, function (req, res) {
+            let limit = Number(req.params.limit);
+            let tableauGouts = req.body.gouts;
+            console.log(tableauGouts, limit);
+
+            questColl.find({ Catégorie: { $in: tableauGouts } }).limit(limit).toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        });
+        
+        //read limit liste spe
+        routes.get("/liste-spe/:idEv/:limit", function (req, res) {
+            console.log(req.params.limit , req.params.idEv);
+            let limit = Number(req.params.limit);
+            let id = req.params.idEv
+            let colek = client.db(database).collection(`q-${id}`);
+            colek.find().limit(limit).toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
+        });
+        //update
+        routes.put("/questions/modif", jsonParser, function (req, res) {
+            let id = new ObjectId(req.body['_id']);
+            req.body['_id'] = id;
+            questColl.updateOne({ '_id': id }, { $set: req.body })
+                .then(() => { res.status(200).send('modif question ok'); })
+                .catch(err => res.send(err));
+        });
+        //delete
+        routes.put("/questions/suppr", jsonParser, function (req, res) {
+            let id = new ObjectId(req.body.id);
+            questColl.deleteOne({ '_id': id })
+                .then(() => { res.status(200).send('ok quest suppr'); })
+                .catch(err => res.send(err));
+        });
+        //-----------------------------------------------------------------------
+
+        //-----------------------------------------------------------------------
+        //-----------------------------------------------------------------------
     })
     // si connect db error :
     .catch(err => {
