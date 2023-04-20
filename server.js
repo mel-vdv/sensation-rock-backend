@@ -45,7 +45,6 @@ client.connect((err) => {
         //-------------------------------------------------------------
         //create
         routes.post("/users/add", jsonParser, function (req, res) {
-            console.log('add post serveur', req.body);
             usersColl.insertOne(req.body)
                 .then((results) => {
                     res.status(200).send({ results });
@@ -64,7 +63,6 @@ client.connect((err) => {
         });
         // read avec idU
         routes.get("/user/:email", function (req, res) {
-            console.log('serveur', req.params.email);
             usersColl.find({ email: req.params.email }).toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
@@ -152,7 +150,6 @@ client.connect((err) => {
         //-------------------------------------------------------------
         //create
         routes.post("/questions/add", jsonParser, function (req, res) {
-            console.log('req body', req.body);
             questColl
                 .insertOne(req.body)
                 .then(() => res.status(200).send("successfully inserted new QUESTION"))
@@ -172,7 +169,6 @@ client.connect((err) => {
         //read limit
         routes.get("/liste-generale/:limit", function (req, res) {
             let limit = Number(req.params.limit);
-            console.log('limit : ', limit);
             questColl.find().limit(limit).toArray()
                 .then((err, results) => {
                     if (err) { return res.send(err) }
@@ -184,7 +180,6 @@ client.connect((err) => {
         routes.put("/liste-perso/:limit", jsonParser, function (req, res) {
             let limit = Number(req.params.limit);
             let tableauGouts = req.body.gouts;
-            console.log(tableauGouts, limit);
 
             questColl.find({ Catégorie: { $in: tableauGouts } }).limit(limit).toArray()
                 .then((err, results) => {
@@ -196,7 +191,6 @@ client.connect((err) => {
         
         //read limit liste spe
         routes.get("/liste-spe/:idEv/:limit", function (req, res) {
-            console.log(req.params.limit , req.params.idEv);
             let limit = Number(req.params.limit);
             let id = req.params.idEv
             let colek = client.db(database).collection(`q-${id}`);
