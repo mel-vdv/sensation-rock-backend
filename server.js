@@ -75,8 +75,40 @@ client.connect((err) => {
         //delete
 
         //-------------------------------------------------------------
+        //---------------------------PODIUM----------------------------------
+        //-------------------------------------------------------------
+        //read
+        routes.get('/podium/:idU/:idEv', function(req,res){
+            let idEv= new ObjectId(req.params.idEv);
+            //let idU= new ObjectId(req.params.idU);
+            concoursColl.find(
+                {'_id': idEv}
+            )
+            .toArray()
+            .then((err, results) => {
+                if (err) { return res.send(err) }
+                res.status(200).send({ results });
+            })
+            .catch(err => res.send(err));
+        });
+        //-------------------------------------------------------------
         //-------------------------SCORE------------------------------------
         //-------------------------------------------------------------
+        //create
+        routes.put("/score/add/:idU", jsonParser, function (req, res) {
+            let id = new ObjectId(req.params.idU);
+
+            usersColl.updateOne(
+                {'_id': id},
+                {
+                    $push : {concours : req.body}
+                })
+                .then((results) => {
+                    res.status(200).send({ results });
+                    console.log('ajout concours ok');
+                })
+                .catch(err => res.send(err));
+        });
         //read
         routes.get('/score/:idU/:idEv', function(req,res){
             let id= new ObjectId(req.params.idU);
