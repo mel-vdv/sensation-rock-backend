@@ -40,6 +40,7 @@ client.connect((err) => {
         const concoursColl = client.db(database).collection("concours");
         const questColl = client.db(database).collection("questions");
         const usersColl = client.db(database).collection('users');
+        const msgColl = client.db(database).collection('messages');
         //-------------------------------------------------------------
         //-------------------------USERS------------------------------------
         //-------------------------------------------------------------
@@ -71,7 +72,13 @@ client.connect((err) => {
                 .catch(err => res.send(err));
         })
         //update
-
+        routes.put('/user/modif/:idU', jsonParser, function(req,res){
+            console.log('etape 3 : ',req.params.idU, req.body);
+            let id = new ObjectId(req.params.idU);
+            usersColl.updateOne(
+                {'_id':id},
+                {$set: req.body})
+        });
         //delete
 
         //-------------------------------------------------------------
@@ -127,7 +134,7 @@ client.connect((err) => {
             usersColl.updateOne(
                 {'_id':id , concours:{ $elemMatch: {'idEv': req.body.idEv}} },
                 {$set: { "concours.$.nbPt": req.body.nbPt, "concours.$.nbQ": req.body.nbQ}})
-        })
+        });
 
         //-------------------------------------------------------------
         //-------------------------CONCOURS------------------------------------
@@ -249,9 +256,18 @@ client.connect((err) => {
                 .catch(err => res.send(err));
         });
         //-----------------------------------------------------------------------
-
+        //------------------------------MESSAGES----------------------------------
         //-----------------------------------------------------------------------
-        //-----------------------------------------------------------------------
+            //create
+            routes.post("/msg/add", jsonParser, function (req, res) {
+                msgColl.insertOne(req.body)
+                    .then((results) => {
+                        res.status(200).send({ results });
+                        console.log('ajout msg ok');
+                    })
+                    .catch(err => res.send(err));
+            //-----------
+            });
     })
     // si connect db error :
     .catch(err => {
