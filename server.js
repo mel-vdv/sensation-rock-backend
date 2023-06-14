@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+// on crée une instance de router : 
 const routes = express.Router();
 const port = 5000;
 const cors = require('cors');
@@ -10,6 +11,7 @@ const database = 'quiz';
 const jsonParser = bodyparser.json();
 
 // mini routesli au sein de l'routes:
+// ici 'api' est l'url de base :
 app.use("/api", routes);
 // on remplace routes par routes pour tout sauf app.listen et ici
 // localhost:8080/api/produits
@@ -41,6 +43,7 @@ client.connect((err) => {
         const questColl = client.db(database).collection("questions");
         const usersColl = client.db(database).collection('users');
         const msgColl = client.db(database).collection('messages');
+        const newslettersColl = client.db(database).collection('newsletters');
         //-------------------------------------------------------------
         //-------------------------USERS------------------------------------
         //-------------------------------------------------------------
@@ -81,6 +84,24 @@ client.connect((err) => {
         });
         //delete
 
+        //-------------------------------------------------------------
+        //---------------------------NEWSLETTERS----------------------------------
+        //-------------------------------------------------------------
+        //create newsletters>listing>emails [] : 
+        routes.post("/newsletters/add", jsonParser, function (req, res) {
+           let email = req.body.email;
+           //updateone marche que si doc listing existe deja 
+            newslettersColl.updateOne(
+                {'_id': 'listing'},
+                {
+                    $push : {emails : email}
+                })
+                .then((results) => {
+                    res.status(200).send({ results });
+                    console.log('ajout email ok');
+                })
+                .catch(err => res.send(err));
+        });
         //-------------------------------------------------------------
         //---------------------------PODIUM----------------------------------
         //-------------------------------------------------------------
