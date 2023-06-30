@@ -6,6 +6,7 @@ const port = 5000;
 const cors = require('cors');
 const bodyparser = require('body-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const nodemailer = require('nodemailer');
 
 const database = 'quiz';
 const jsonParser = bodyparser.json();
@@ -75,12 +76,12 @@ client.connect((err) => {
                 .catch(err => res.send(err));
         })
         //update
-        routes.put('/user/modif/:idU', jsonParser, function(req,res){
-            console.log('etape 3 : ',req.params.idU, req.body);
+        routes.put('/user/modif/:idU', jsonParser, function (req, res) {
+            console.log('etape 3 : ', req.params.idU, req.body);
             let id = new ObjectId(req.params.idU);
             usersColl.updateOne(
-                {'_id':id},
-                {$set: req.body})
+                { '_id': id },
+                { $set: req.body })
         });
         //delete
 
@@ -89,12 +90,12 @@ client.connect((err) => {
         //-------------------------------------------------------------
         //create newsletters>listing>emails [] : 
         routes.post("/newsletters/add", jsonParser, function (req, res) {
-           let email = req.body.email;
-           //updateone marche que si doc listing existe deja 
+            let email = req.body.email;
+            //updateone marche que si doc listing existe deja 
             newslettersColl.updateOne(
-                {'_id': 'listing'},
+                { '_id': 'listing' },
                 {
-                    $push : {emails : email}
+                    $push: { emails: email }
                 })
                 .then((results) => {
                     res.status(200).send({ results });
@@ -106,18 +107,18 @@ client.connect((err) => {
         //---------------------------PODIUM----------------------------------
         //-------------------------------------------------------------
         //read
-        routes.get('/podium/:idU/:idEv', function(req,res){
-            let idEv= new ObjectId(req.params.idEv);
+        routes.get('/podium/:idU/:idEv', function (req, res) {
+            let idEv = new ObjectId(req.params.idEv);
             //let idU= new ObjectId(req.params.idU);
             concoursColl.find(
-                {'_id': idEv}
+                { '_id': idEv }
             )
-            .toArray()
-            .then((err, results) => {
-                if (err) { return res.send(err) }
-                res.status(200).send({ results });
-            })
-            .catch(err => res.send(err));
+                .toArray()
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
         });
         //-------------------------------------------------------------
         //-------------------------SCORE------------------------------------
@@ -127,9 +128,9 @@ client.connect((err) => {
             let id = new ObjectId(req.params.idU);
 
             usersColl.updateOne(
-                {'_id': id},
+                { '_id': id },
                 {
-                    $push : {concours : req.body}
+                    $push: { concours: req.body }
                 })
                 .then((results) => {
                     res.status(200).send({ results });
@@ -138,23 +139,23 @@ client.connect((err) => {
                 .catch(err => res.send(err));
         });
         //read
-        routes.get('/score/:idU/:idEv', function(req,res){
-            let id= new ObjectId(req.params.idU);
+        routes.get('/score/:idU/:idEv', function (req, res) {
+            let id = new ObjectId(req.params.idU);
             usersColl.find(
-                {'_id': id, concours:{ $elemMatch: {'idEv': req.params.idEv}}}
+                { '_id': id, concours: { $elemMatch: { 'idEv': req.params.idEv } } }
             ).toArray()
-            .then((err, results) => {
-                if (err) { return res.send(err) }
-                res.status(200).send({ results });
-            })
-            .catch(err => res.send(err));
+                .then((err, results) => {
+                    if (err) { return res.send(err) }
+                    res.status(200).send({ results });
+                })
+                .catch(err => res.send(err));
         });
         //update
-        routes.put('/score/modif/:idU', jsonParser, function(req,res){
+        routes.put('/score/modif/:idU', jsonParser, function (req, res) {
             let id = new ObjectId(req.params.idU);
             usersColl.updateOne(
-                {'_id':id , concours:{ $elemMatch: {'idEv': req.body.idEv}} },
-                {$set: { "concours.$.nbPt": req.body.nbPt, "concours.$.nbQ": req.body.nbQ}})
+                { '_id': id, concours: { $elemMatch: { 'idEv': req.body.idEv } } },
+                { $set: { "concours.$.nbPt": req.body.nbPt, "concours.$.nbQ": req.body.nbQ } })
         });
 
         //-------------------------------------------------------------
@@ -198,6 +199,17 @@ client.connect((err) => {
                 .then(() => { res.status(200).send('modif event ok'); })
                 .catch(err => res.send(err));
         });
+        // update les participants du concours : incrementer le nbPt
+        routes.put("/concours/modif/participants/:idEv/:idU", jsonParser, function (req, res) {
+            console.log('etape3 server : ', req.params.idEv, req.params.idU, req.body.n);
+            let id = new ObjectId(req.params.idEv);
+            let n = req.body.n;
+            concoursColl.updateOne({ '_id': id, participants: { $elemMatch: { 'idU': req.params.idU } } },
+                { $inc: { "participants.$.nbPt": n } })
+                .then(() => { res.status(200).send('modif event ok'); })
+                .catch(err => res.send(err));
+        });
+
         //delete
         routes.put("/concours/suppr", jsonParser, function (req, res) {
             let id = new ObjectId(req.body.id);
@@ -248,7 +260,7 @@ client.connect((err) => {
                 })
                 .catch(err => res.send(err));
         });
-        
+
         //read limit liste spe
         routes.get("/liste-spe/:idEv/:limit", function (req, res) {
             let limit = Number(req.params.limit);
@@ -279,22 +291,85 @@ client.connect((err) => {
         //-----------------------------------------------------------------------
         //------------------------------MESSAGES----------------------------------
         //-----------------------------------------------------------------------
-            //create
-            routes.post("/msg/add", jsonParser, function (req, res) {
-                msgColl.insertOne(req.body)
-                    .then((results) => {
-                        res.status(200).send({ results });
-                        console.log('ajout msg ok');
-                    })
-                    .catch(err => res.send(err));
+        //create
+        routes.post("/msg/contact", jsonParser, function (req, res) {
+            //etape 1 :
+            let formulaire = req.body;
+            var mail = {
+                from: '"MELWIN"<melvdeve@gmail.com>',
+                to: `melvdv@yahoo.fr`,
+                subject:"Nouveau formulaire de contact rempli sur MELWIN",
+                text:"",
+                html:`
+                <h2>Formulaire de contact envoyé depuis la plateforme MELWIN : </h2>
+                <p> Nom  : ${formulaire.nom}</p>
+                <p> Prénom  : ${formulaire.prenom}</p>
+                <p> Entreprise  : ${formulaire.entreprise}</p>
+                <p> Email  : ${formulaire.email}</p>
+                <p> TEL  : ${formulaire.tel}</p>
+                <p> Demande  : ${formulaire.msg}</p>
+                `
+            }
+            envoyerDemande(mail);
+            //etape 2 : 
+            msgColl.insertOne(req.body)
+                .then((results) => {
+                    res.status(200).send({ results });
+                    console.log('ajout msg ok');
+                })
+                .catch(err => res.send(err));
             //-----------
-            });
+        });
+        //------
+        routes.post("/msg/demande", jsonParser, function (req, res) {
+            let adresse = req.body.email;
+            var mail = {
+                from: '"MELWIN"<melvdeve@gmail.com>',
+                to: `melvdv@yahoo.fr`,
+                subject: "Nouvelle demande d'information",
+                text: `Demande d'informations  : 
+                Un utilisateur demande de recevoir des informations au sujet des modalités pour devenir annonceur sur la plateforme Melwin.
+                à l'adresse amil suivante : ${adresse}
+                `,
+                html: `
+                <h2>Demande d'informations</h2>
+                <p>
+                Un utilisateur demande de recevoir des informations au sujet des modalités pour devenir annonceur sur la plateforme Melwin 
+                à l'adresse mail suivante : ${adresse}
+                </p>
+                `
+            };
+            envoyerDemande(mail);
+        })
+
+//-----------------------------------NODEMAILER
+//-----------------------------------NODEMAILER
+//-----------------------------------NODEMAILER
+var transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,  
+        secure: false,
+        service: "gmail",
+        auth: {
+            user: 'melvdeve@gmail.com',
+            pass: 'wtmqyxmlxzxaozzl'
+        }
+    });
+var envoyerDemande = (mail) => {
+
+    transporter.sendMail(mail);
+
+}
+//-------------
+
+
     })
     // si connect db error :
     .catch(err => {
         console.error(err.message);
         res.send(err);
     });
+
 
 
 
