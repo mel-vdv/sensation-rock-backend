@@ -17,6 +17,7 @@ app.use("/api", routes);
 // on remplace routes par routes pour tout sauf app.listen et ici
 // localhost:8080/api/produits
 
+
 //cors :
 routes.use(cors());
 //bp :
@@ -371,7 +372,17 @@ var envoyerDemande = (mail) => {
     });
 
 
-
+//-----------------------------------------------------
+//-----------------------------------------------------
+// SERVIR DES FICHIERS STATIQUES    : 
+const path = require('path');
+const public_path = path.join(__dirname, '/build');////////// attention /build et non ../build car dirname démarre de sensation rock
+app.use(express.static(public_path));
+app.get("*", (_,res)=>{
+    res.sendFile(path.join(public_path, 'index.html'));
+})
+//-----------------------------------------------------
+//--
 
 //----------- connect to server -----------------------------------------
 app.listen(port, () => {
@@ -387,8 +398,6 @@ routes.post
 routes.delete
 */
 
-routes.get("/", (req, res) => {
-    res.send("hello world");
-});
+
 //-------------
 
