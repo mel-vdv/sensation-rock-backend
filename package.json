@@ -1,0 +1,28 @@
+{
+  "name": "melwin-back",
+  "version": "1.0.0",
+  "description": "fuck",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon --exec babel-node src/index.js",
+    "build": "babel src -d dist",
+    "serve": "node dist/index.js"
+  },
+  "dependencies": {
+    "@babel/cli": "^7.22.5",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongodb": "^5.1.0",
+    "nodemailer": "^6.9.3",
+    "nodemon": "^2.0.22",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.0",
+    "@babel/node": "^7.17.10",
+    "@babel/preset-env": "^7.18.0"
+  }
+}
